@@ -1,0 +1,58 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:		bluealsa
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Required-Start:	dbus $syslog $local_fs $remote_fs bluetooth
+# Required-Stop:	dbus $syslog $local_fs $remote_fs
+# Short-Description:	Bluealsa daemon
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+NAME=bluealsa
+DESC="Bluealsa daemon"
+DAEMON=/usr/bin/$NAME
+PIDFILE="/var/run/$NAME.pid"
+COMMON_OPTS="--quiet --oknodo --pidfile $PIDFILE"
+BA_OPTS="-p a2dp-source -p a2dp-sink"
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -f /etc/default/bluez-alsa ] && . /etc/default/bluez-alsa
+
+start() {
+	log_daemon_msg "Starting $DESC" "$NAME"
+	start-stop-daemon --start --background --make-pidfile $COMMON_OPTS \
+			  --exec $DAEMON -- $BA_OPTS $OPTIONS
+	log_end_msg $?
+}
+
+stop() {
+	log_daemon_msg "Stopping $DESC" "$NAME"
+	start-stop-daemon --stop $COMMON_OPTS --exec $DAEMON
+	log_end_msg $?
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|force-reload)
+		stop
+		start
+		;;
+	status)
+		status_of_proc -p $PIDFILE $DAEMON $NAME
+		;;
+	*)
+		echo "Usage: $0 {start|stop|force-reload|restart|status}"
+		exit 2
+		;;
+esac
